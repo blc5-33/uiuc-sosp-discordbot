@@ -1,4 +1,7 @@
 import discord
-import mojang
+from mcstatus import JavaServer
 
-intents = discord.Intents.default()
+server = JavaServer.lookup("vanilla.casual-craft.com")
+
+status = server.status()
+print(f"The server has {status.players.online} players")
