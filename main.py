@@ -18,12 +18,17 @@ class MinecraftBot(commands.Bot):
         self.SERVER_UNSET_MESSAGE = "No Minecraft server has been set yet!"
         self.minecraft_java_server = None
 
+    def current_server_ip(self) -> str:
+        if self.minecraft_java_server:
+            address = self.minecraft_java_server.address
+            return f"{address.host.split('_tcp.')[-1]}:{address.port}"
+
 
 # Intents - what the bot is meant to do
 # At the moment I have everything enabled since this is my first bot. As I develop my program,
 # I am going to reduce intents to just what I need.
 intents = discord.Intents.all()
-bot = MinecraftBot(command_prefix="!", intents=intents)
+bot = MinecraftBot(command_prefix="/mc ", intents=intents)
 
 # This command decorator/annotation, the bot will recognize this as a command
 # Async = not at time of function call. Need to |await| before sending context.
@@ -31,22 +36,27 @@ bot = MinecraftBot(command_prefix="!", intents=intents)
 # - can include info about user who called it, time, and other info
 # - check Discord's documentation for more info
 @bot.command()
-async def setminecraftserver(ctx: Context, mcServerName: str):
+async def setserver(ctx: Context, mcServerName: str):
     bot.minecraft_java_server = JavaServer.lookup(mcServerName)
-    await ctx.send(f"Set associated Minecraft server to `{bot.minecraft_java_server.address}`")
+    try:
+        bot.minecraft_java_server.status()
+    except:
+        await ctx.send(f"Could not connect to that address's Minecraft server!")
+        return
+    await ctx.send(f"Set associated Minecraft server to `{bot.current_server_ip()}`")
 
 @bot.command()
-async def getminecraftserver(ctx: Context):
-    if bot.minecraft_java_server is not None:
-        await ctx.send(f"Associated Minecraft server IP is `{bot.minecraft_java_server.address}`")
+async def getserver(ctx: Context):
+    if bot.minecraft_java_server:
+        await ctx.send(f"Associated Minecraft server IP is `{bot.current_server_ip()}`")
     else:
         await ctx.send(bot.SERVER_UNSET_MESSAGE)
 
 @bot.command()
 async def online(ctx: Context):
-    if bot.minecraft_java_server is not None:
+    if bot.minecraft_java_server:
         status = bot.minecraft_java_server.status()
-        await ctx.send(f"There are **{status.players.online}/{status.players.max}** players online on `{bot.minecraft_java_server.address}`")
+        await ctx.send(f"There are **{status.players.online}/{status.players.max}** players online on `{bot.current_server_ip()}`")
     else:
         await ctx.send(bot.SERVER_UNSET_MESSAGE)
 
