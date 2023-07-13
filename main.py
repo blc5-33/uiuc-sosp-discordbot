@@ -1,49 +1,15 @@
-from dotenv import load_dotenv
-import os
-from mcstatus import JavaServer
 import discord
 from discord.ext import commands
+import minecraftbot
+from mcstatus import JavaServer
 
-# Type aliases
 Context = commands.Context
-
-class MinecraftBot(commands.Bot):
-    def __init__(self, 
-                #  SERVER_UNSET_MESSAGE="No Minecraft server has been set yet!",
-                #  minecraft_java_server=None,
-                 **kwargs):
-        super().__init__(**kwargs)
-        self.SERVER_UNSET_MESSAGE = "No Minecraft server has been set yet!"
-        self.SERVER_CONNECT_FAIL_MESSAGE = "Could not connect to that address's Minecraft server!"
-        self.minecraft_java_server = None
-    
-    def server_is_set(self) -> bool:
-        return self.minecraft_java_server
-
-    def server_is_online(self) -> bool:
-        if self.server_is_set():
-            try:
-                self.minecraft_java_server.status()
-            except:
-                return False
-            return True
-        
-        return False
-    
-    def server_ip(self) -> str:
-        """
-        Returns the IP address\n
-        MUST check `server_is_online()` before calling this function.
-        """
-        address = self.minecraft_java_server.address
-        return f"{address.host.split('_tcp.')[-1]}:{address.port}"
-
 
 # Intents - what the bot is meant to do
 # At the moment I have everything enabled since this is my first bot. As I develop my program,
 # I am going to reduce intents to just what I need.
 intents = discord.Intents.all()
-bot = MinecraftBot(command_prefix="/mc ", intents=intents)
+bot = minecraftbot.MinecraftBot(command_prefix="/mc ", intents=intents)
 
 # This command decorator/annotation, the bot will recognize this as a command
 # Async = not at time of function call. Need to |await| before sending context.
@@ -79,6 +45,9 @@ async def online(ctx: Context):
     else:
         await ctx.send(bot.SERVER_CONNECT_FAIL_MESSAGE)
 
+
+from dotenv import load_dotenv
+import os
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
