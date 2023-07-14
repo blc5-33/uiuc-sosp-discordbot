@@ -3,6 +3,8 @@ from discord.ext import commands
 import minecraftbot
 from mcstatus import JavaServer
 
+from typing import Self
+
 Context = commands.Context
 
 # Intents - what the bot is meant to do
@@ -41,82 +43,33 @@ async def online(ctx: Context):
         await ctx.send(bot.SERVER_UNSET_MESSAGE)
     elif bot.server_is_online():
         status = bot.minecraft_java_server.status()
-        await ctx.send(f"There are **{status.players.online}/{status.players.max}** players online on `{bot.server_ip()}`")
+        await ctx.send(f"""There are **{status.players.online}/{status.players.max}** players 
+                       online on `{bot.server_ip()}`""")
     else:
         await ctx.send(bot.SERVER_CONNECT_FAIL_MESSAGE)
 
-
-class PlanView(discord.ui.View):
-    def __init__(self, creator_id: int, info: str = "", **kwargs):
-        super().__init__(**kwargs)
-        self.creator_id = creator_id
-        self.info = info
-        self.interested_players: set[int] = set()
-
-
-    @discord.ui.button(style=discord.ButtonStyle.green, label="I'm Interested!")
-
-    async def interested(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id not in self.interested_players:
-            self.interested_players.add(interaction.user.id)
-            await interaction.response.send_message(
-                content="You have been marked as interested for this plan.\nYou will be pinged at the start of the plan.",
-                ephemeral=True,delete_after=15)
-        else:
-            await interaction.response.send_message(
-                content="You are already interested!",
-                ephemeral=True,delete_after=6)
-            
-        
-    @discord.ui.button(style=discord.ButtonStyle.red, label="I'm No Longer Interested...")
-
-    async def not_interested(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id in self.interested_players:
-            self.interested_players.remove(interaction.user.id)
-            await interaction.response.send_message(
-                content="You are no longer interested for this plan.",
-                ephemeral=True,delete_after=15)
-        else:
-            await interaction.response.send_message(
-                content="You are already not interested!",
-                ephemeral=True,delete_after=6)
-
-
-    @discord.ui.button(style=discord.ButtonStyle.blurple, label="Start Plan")
-
-    async def start(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id == self.creator_id:
-            # TODO: Find a way to ping all interested users.
-            await interaction.response.send_message(
-                content=f"The event \"{self.info}\" has started!")
-            self.stop()
-        else:
-            await interaction.response.send_message(
-                content="You don't have permission to do that.",
-                ephemeral=True,delete_after=6)
-    
-
-    @discord.ui.button(style=discord.ButtonStyle.grey, label="Cancel Plan")
-
-    async def cancel(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id == self.creator_id:
-            await interaction.response.send_message(
-                content=f"The event \"{self.info}\" has been cancelled.")
-            self.stop()
-        else:
-            await interaction.response.send_message(
-                content="You don't have permission to do that.",
-                ephemeral=True,delete_after=6)
-            
+import planview
+from datetime import datetime
 
 @bot.command()
 async def plan(ctx: Context, action: str, *tokens):
+    await ctx.message.delete()
     if action == "create":
         message = " ".join(tokens)
-        plan_view = PlanView(ctx.author.id, info=message, timeout=None)
-        view_message = await ctx.send(content=f"{message}", view=plan_view)
+        embed = discord.Embed(color=discord.Color.green(), title=message, timestamp=datetime.now()) \
+                .set_footer(text="Minecraft Looking For Group Bot") \
+                .set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar) \
+                .set_thumbnail(url="https://static.wikia.nocookie.net/minecraft_gamepedia/images/a/a4/Grass_Block_%28item%29_BE5.png/revision/latest?cb=20200901112517") \
+                .add_field(name="Interested Players:", value="No interested players yet... Be the first!", inline=False)
+        plan_view = planview.PlanView(ctx.author.id, embed=embed, timeout=None)
+        view_message = await ctx.send(view=plan_view, embed=embed)
+        plan_view.set_message(view_message)
+
         await plan_view.wait()
-        await view_message.delete()
+        # Only way I could figure out how to ping people, not ideal. Ideal would be doing it
+        # inside of the PlanView class
+        if plan_view.interested_players:
+            await ctx.send(content=plan_view.interested_players_string, delete_after=0.1)
 
     # maybe another action: |view| all current ongoing plans?
 
