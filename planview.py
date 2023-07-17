@@ -78,6 +78,8 @@ class PlanView(discord.ui.View):
                 ephemeral=True,delete_after=6)
 
 
+    # TODO: Allow users with LFG Bot perms to force start or cancel events.
+
     @discord.ui.button(style=discord.ButtonStyle.blurple, label="Start Plan")
 
     async def start(self, interaction: discord.Interaction, button: discord.Button):

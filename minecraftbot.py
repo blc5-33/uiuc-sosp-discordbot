@@ -6,7 +6,9 @@ from discord.ext import commands
 from mcstatus import JavaServer
 from datetime import datetime
 import base64
-import logging
+
+# TODO: Change to a HashMap storage of guild_id -> javaserver, requires *significant* refactoring
+# But this will allow >1 guild to use my bot
 
 class MinecraftBot(commands.Bot):
     def __init__(self, 

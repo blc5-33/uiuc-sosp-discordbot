@@ -2,16 +2,15 @@ import discord
 from discord.ext import commands
 import minecraftbot
 from mcstatus import JavaServer
-import base64
-
-import logging
 
 Context = commands.Context
 
 # Intents - what the bot is meant to do
 # At the moment I have everything enabled since this is my first bot.
 # Maybe in the future as I develop my program, I am going to reduce intents to just what I need.
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
 bot = minecraftbot.MinecraftBot(command_prefix="/mc ", intents=intents)
 
 # This command decorator/annotation, the bot will recognize this as a command
